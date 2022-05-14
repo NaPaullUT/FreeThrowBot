@@ -9,15 +9,15 @@ def test_sarsa_lamda():
     env = FreeThrowEnv()
     gamma = 1.
     print("Declared Env")
-    
+    #print(env.observation_space.high)
     X = StateActionFeatureVectorWithRBF(
-        env.observation_space.low[:4],
-        env.observation_space.high[:4],
+        env.observation_space.low,
+        env.observation_space.high,
         env.action_space.nvec,
-        num_rbfs=np.array([4,4,4,4])
+        num_rbfs=np.array([4,4,8,8])
     )
     print("Declared Value Func")
-    w = SarsaLambda(env, gamma, 0.8, 0.01, X, 100)
+    w = SarsaLambda(env, gamma, 0.8, 0.01, X, 500)
     print("Declared Feat Vec")
     def greedy_policy(s,done):
         nA = [np.arange(a) for a in env.action_space.nvec]
@@ -43,8 +43,7 @@ def test_sarsa_lamda():
             G += r
         return G
     print("Starting Eval")
-    Gs = [_eval(render=True) for _ in  range(100)]
-    #_eval(True)
+    Gs = [_eval(render=False) for _ in  range(100)]
     plt.scatter(x=np.arange(100),y=Gs)
     plt.show()
     #assert np.max(Gs) >= -110.0, 'fail to solve mountaincar'

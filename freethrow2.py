@@ -114,8 +114,8 @@ class FreeThrowEnv(core.Env):
     LINK_COM_POS_2 = 0.5  #: [m] position of the center of mass of link 2
     LINK_MOI = 1.0  #: moments of inertia for both links
 
-    MAX_VEL_1 = 1 * pi
-    MAX_VEL_2 = 2 * pi
+    MAX_VEL_1 = 1.5 * pi
+    MAX_VEL_2 = 1.5 * pi
 
     AVAIL_TORQUE = [-10.0, 0.0, +10]
 
@@ -130,6 +130,7 @@ class FreeThrowEnv(core.Env):
     STEPS_REMAINING = 0
 
     ball_rad = 0.2
+    DIST_LEFT=0.0
 
     #: use dynamics equations from the nips paper or the book
     book_or_nips = "book"
@@ -144,10 +145,16 @@ class FreeThrowEnv(core.Env):
         high = np.array(
             [1.0, 1.0, 1.0, 1.0, self.MAX_VEL_1, self.MAX_VEL_2], dtype=np.float32
         )
+        #pos x, pos y, vel x, vel y
+        #pos r, pos theta, vel x, vel y
+        max_pos = (self.LINK_LENGTH_1+self.LINK_LENGTH_2)
+        max_vel = (self.MAX_VEL_1*self.LINK_LENGTH_1)+(self.MAX_VEL_2*self.LINK_LENGTH_2)
+        new_high = np.array([max_pos, max_pos, max_vel, max_vel])
+        new_low=-new_high
         low = -high
         #high=np.append(high,1)
         #low=np.append(low,0)
-        self.observation_space = spaces.Box(low=low, high=high, dtype=np.float32)
+        self.observation_space = spaces.Box(low=new_low, high=new_high, dtype=np.float32)
         self.action_space = spaces.MultiDiscrete([3,3,2])
         self.state = None
 
@@ -221,7 +228,7 @@ class FreeThrowEnv(core.Env):
         self.checkResult()
 
         terminal = self._terminal()
-        reward = -1.0 if not terminal and self.poss else 0.0
+        reward = self._reward()#-1.0 if not terminal and self.poss else 0.0
         #reward = 
         return (self._get_ob(), self.poss, reward, terminal, {})
 
@@ -286,8 +293,8 @@ class FreeThrowEnv(core.Env):
         #rim_right = pygame.Rect(500,int(self.SCREEN_DIM_HEIGHT/2),0,25).inflate(5,0)
         self.onFloor(int(self.ball_pos[1]*scale+ offset_x),int(self.ball_pos[0]*scale+ offset_y))
         ball = pygame.Rect(int(self.ball_pos[1]*scale+ offset_x),int(self.ball_pos[0]*scale+ offset_y),0,0).inflate(int(self.ball_rad*scale)*2,int(self.ball_rad*scale)*2)
-        hoop = pygame.Rect(100,int(self.SCREEN_DIM_HEIGHT/10),800,25)
-        self.collision(None,ball,hoop)
+        hoop = pygame.Rect(100,int(self.SCREEN_DIM_HEIGHT/10),800,100)
+        self.collision(None,ball,hoop,900,800,int(self.ball_pos[1]*scale+ offset_x))
 
     def _dvdt(self, ):
 
@@ -297,10 +304,19 @@ class FreeThrowEnv(core.Env):
 
         pass
 
+    def _reward(self):
+        if self.MADE_BUCKET:
+            return 300.0*self.DIST_LEFT
+        elif self._terminal() or not self.poss:
+            return 0.
+        return -1.0
+
+
     def _get_ob(self):
         s = self.state
         assert s is not None, "Call reset before using AcrobotEnv object."
-        test=[cos(s[0]), sin(s[0]), cos(s[1]), sin(s[1]), s[2], s[3]]
+        #test=[cos(s[0]), sin(s[0]), cos(s[1]), sin(s[1]), s[2], s[3]]
+        test = [self.ball_pos[0],self.ball_pos[1], self.ball_vel[0],self.ball_vel[1]]
         #test = [self.ball_pos[0],self.ball_pos[1],self.ball_vel[0],self.ball_vel[1]]
         return np.array(test)
 
@@ -490,7 +506,7 @@ class FreeThrowEnv(core.Env):
         else:
             return self.isopen
 
-    def collision(self,rim,ball,hoop):
+    def collision(self,rim,ball,hoop,h_r,h_l, b_x):
         import pygame
         if rim is not None:
             for r in rim:
@@ -498,7 +514,9 @@ class FreeThrowEnv(core.Env):
                     self.reflectBall()
         if ball.colliderect(hoop):
             self.MADE_BUCKET = 1
-            #print("hit the goal")
+            self.DIST_LEFT= -1*(b_x-h_r)/h_l
+        else:
+            self.DIST_LEFT=0.0
         
     def reflectBall(self):
         self.ball_vel[0]*=-1

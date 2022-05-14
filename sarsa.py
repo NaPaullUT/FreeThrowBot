@@ -41,7 +41,7 @@ class StateActionFeatureVectorWithRBF():
     def phi(self,_state):
         _phi = np.zeros(self.num_ind)
         for _k in range(self.num_ind):
-            _phi[_k] = np.exp(-np.linalg.norm(_state[:4] - self.centers[_k, :]) ** 2 / self.rbf_den)
+            _phi[_k] = np.exp(-np.linalg.norm(_state - self.centers[_k, :]) ** 2 / self.rbf_den)
         return _phi
 
     def __call__(self, s, done, a):
