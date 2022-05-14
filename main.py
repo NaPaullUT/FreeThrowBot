@@ -11,8 +11,8 @@ def test_sarsa_lamda():
     print("Declared Env")
     
     X = StateActionFeatureVectorWithRBF(
-        env.observation_space.low,
-        env.observation_space.high,
+        env.observation_space.low[:4],
+        env.observation_space.high[:4],
         env.action_space.nvec,
         num_rbfs=np.array([4,4,4,4])
     )
@@ -22,7 +22,7 @@ def test_sarsa_lamda():
     def greedy_policy(s,done):
         nA = [np.arange(a) for a in env.action_space.nvec]
         a_space = np.array(np.meshgrid(nA[0],nA[1],nA[2])).T.reshape(-1,3)
-        Q = [np.dot(w, X(s,done,a)) for a in a_space]
+        Q = [np.dot(w[:,int(np.where((a_space == a).all(axis=1))[0])], X(s,done,a)) for a in a_space]
         return a_space[np.argmax(Q)]
 
     def _eval(render=False):

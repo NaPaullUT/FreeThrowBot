@@ -15,8 +15,6 @@ class StateActionFeatureVectorWithRBF():
                  ):#tile_width:np.array
 
         n_actions = np.prod(num_actions)
-        assert n_actions==len(num_rbfs)
-
         s_dim = state_high.size
         assert s_dim == 4
 
@@ -43,7 +41,7 @@ class StateActionFeatureVectorWithRBF():
     def phi(self,_state):
         _phi = np.zeros(self.num_ind)
         for _k in range(self.num_ind):
-            _phi[_k] = np.exp(-np.linalg.norm(_state - self.centers[_k, :]) ** 2 / self.rbf_den)
+            _phi[_k] = np.exp(-np.linalg.norm(_state[:4] - self.centers[_k, :]) ** 2 / self.rbf_den)
         return _phi
 
     def __call__(self, s, done, a):
@@ -73,7 +71,7 @@ def SarsaLambda(
             idx = np.random.choice(a_space.shape[0])
             return a_space[idx]
         else:
-            Q = [np.dot(w, X(s,done,a)) for a in a_space]
+            Q = [np.dot(w[:,int(np.where((a_space == a).all(axis=1))[0])], X(s,done,a)) for a in a_space]
             return a_space[np.argmax(Q)]
 
     nA = [np.arange(a) for a in env.action_space.nvec]
@@ -99,15 +97,15 @@ def SarsaLambda(
                 next_a=[0,0,0]
             next_x=X(s,done,next_a)
 
-            w_col = np.where((a_space == a).all(axis=1))[0]
-            w_col_next = np.where((a_space == next_a).all(axis=1))[0]
-            q = np.dot(w[w_col,:],x)
-            next_q=np.dot(w[w_col_next,:],next_x)
+            w_col = int(np.where((a_space == a).all(axis=1))[0])
+            w_col_next = int(np.where((a_space == next_a).all(axis=1))[0])
+            q = np.dot(w[:,w_col],x)
+            next_q=np.dot(w[:,w_col_next],next_x)
 
             tde = r + gamma*next_q - q
 
             z = gamma*lam*z + (1-alpha*gamma*lam*np.dot(z,x))*x
-            w = w + alpha*(tde+q-q_old)*z - alpha*(q-q_old)*x
+            w[:,w_col] = w[:,w_col] + alpha*(tde+q-q_old)*z - alpha*(q-q_old)*x
 
             q_old = next_q
             x = next_x
