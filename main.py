@@ -1,12 +1,15 @@
 import numpy as np
 import gym
 from sarsa import SarsaLambda, StateActionFeatureVectorWithRBF
-from freethrow2 import FreeThrowEnv
+from freethrow_horizontal_train import FreeThrowEnv as FTH
+from freethrow_vertical_train import FreeThrowEnv as FTV
+from freethrow_final import FreeThrowEnv as FTF
 import matplotlib.pyplot as plt
+from tqdm import tqdm
 
-def test_sarsa_lamda():
+def test_sarsa_lamda(envs):
     
-    env = FreeThrowEnv()
+    env = envs[0]
     gamma = 1.
     print("Declared Env")
     #print(env.observation_space.high)
@@ -17,7 +20,10 @@ def test_sarsa_lamda():
         num_rbfs=np.array([4,4,8,8])
     )
     print("Declared Value Func")
-    w = SarsaLambda(env, gamma, 0.8, 0.01, X, 500)
+    n_actions = np.prod(env.action_space.nvec)
+    w = np.zeros((X.feature_vector_len())*n_actions).reshape(-1,n_actions)
+    for env in envs:
+        w = SarsaLambda(env, gamma, 0.8, 0.01, X, 500, w)
     print("Declared Feat Vec")
     def greedy_policy(s,done):
         nA = [np.arange(a) for a in env.action_space.nvec]
@@ -26,7 +32,6 @@ def test_sarsa_lamda():
         return a_space[np.argmax(Q)]
 
     def _eval(render=False):
-        print("\tNew Eval")
         s,poss = env.reset()
         done=False
         if render: env.render()
@@ -43,11 +48,12 @@ def test_sarsa_lamda():
             G += r
         return G
     print("Starting Eval")
-    Gs = [_eval(render=False) for _ in  range(100)]
+    Gs = [_eval(render=False) for _ in  tqdm(range(100))]
     plt.scatter(x=np.arange(100),y=Gs)
     plt.show()
     #assert np.max(Gs) >= -110.0, 'fail to solve mountaincar'
 
 
 if __name__ == "__main__":
-    test_sarsa_lamda()
+    envs = [FTH(),FTV(),FTF()]
+    test_sarsa_lamda(envs)

@@ -62,6 +62,7 @@ def SarsaLambda(
     alpha:float, # step size
     X:StateActionFeatureVectorWithRBF,
     num_episode:int,
+    w=None
 ) -> np.array:
     """
     Implement True online Sarsa(\lambda)
@@ -77,7 +78,8 @@ def SarsaLambda(
     nA = [np.arange(a) for a in env.action_space.nvec]
     a_space = np.array(np.meshgrid(nA[0],nA[1],nA[2])).T.reshape(-1,3)
     n_actions = np.prod(env.action_space.nvec)
-    w = np.zeros((X.feature_vector_len())*n_actions).reshape(-1,n_actions)
+    if w is None:
+        w = np.zeros((X.feature_vector_len())*n_actions).reshape(-1,n_actions)
 
     for y in tqdm(range(num_episode)):
         s, poss = env.reset()

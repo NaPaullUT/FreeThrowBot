@@ -293,8 +293,10 @@ class FreeThrowEnv(core.Env):
         #rim_right = pygame.Rect(500,int(self.SCREEN_DIM_HEIGHT/2),0,25).inflate(5,0)
         self.onFloor(int(self.ball_pos[1]*scale+ offset_x),int(self.ball_pos[0]*scale+ offset_y))
         ball = pygame.Rect(int(self.ball_pos[1]*scale+ offset_x),int(self.ball_pos[0]*scale+ offset_y),0,0).inflate(int(self.ball_rad*scale)*2,int(self.ball_rad*scale)*2)
-        hoop = pygame.Rect(100,int(self.SCREEN_DIM_HEIGHT/10),800,100)
-        self.collision(None,ball,hoop,900,800,int(self.ball_pos[1]*scale+ offset_x))
+        hoop = pygame.Rect(350,int(self.SCREEN_DIM_HEIGHT/2)-100,150,100)
+        rim_left = pygame.Rect(350,int(self.SCREEN_DIM_HEIGHT/2)-100,0,100).inflate(5,0)
+        rim_right = pygame.Rect(500,int(self.SCREEN_DIM_HEIGHT/2)-100,0,100).inflate(5,0)
+        self.collision([rim_left,rim_right],ball,hoop)
 
     def _dvdt(self, ):
 
@@ -306,11 +308,10 @@ class FreeThrowEnv(core.Env):
 
     def _reward(self):
         if self.MADE_BUCKET:
-            return 300.0*self.DIST_LEFT
+            return 300.0
         elif self._terminal() or not self.poss:
             return 0.
         return -1.0
-
 
     def _get_ob(self):
         s = self.state
@@ -469,20 +470,19 @@ class FreeThrowEnv(core.Env):
 
         
         #pygame.draw.rect(self.surf, (2, 200, 0), ball)
+        hoop = pygame.Rect(350,int(self.SCREEN_DIM_HEIGHT/2)-100,150,100)
+        rim_left = pygame.Rect(350,int(self.SCREEN_DIM_HEIGHT/2)-100,0,100).inflate(5,0)
+        rim_right = pygame.Rect(500,int(self.SCREEN_DIM_HEIGHT/2)-100,0,100).inflate(5,0)
 
-        #rim_left = pygame.Rect(400,int(self.SCREEN_DIM_HEIGHT/2),0,25).inflate(5,0)
-        #pygame.draw.rect(self.surf, (2, 200, 200), rim_left)
-
-        #rim_right = pygame.Rect(500,int(self.SCREEN_DIM_HEIGHT/2),0,25).inflate(5,0)
-        #pygame.draw.rect(self.surf, (2, 200, 200), rim_right)
-        #self.onFloor(int(self.ball_pos[1]*scale+ offset_x),int(self.ball_pos[0]*scale+ offset_y))
-        #ball = pygame.Rect(int(self.ball_pos[1]*scale+ offset_x),int(self.ball_pos[0]*scale+ offset_y),0,0).inflate(int(self.ball_rad*scale)*2,int(self.ball_rad*scale)*2)
-        hoop = pygame.Rect(100,int(self.SCREEN_DIM_HEIGHT/10),800,25)
-        #self.collision(None,ball,hoop)
         pygame.draw.rect(self.surf, (204, 0, 0), hoop)
+        pygame.draw.rect(self.surf, (2, 200, 200), rim_left)
+        pygame.draw.rect(self.surf, (2, 200, 200), rim_right)
 
-        
+        hor = pygame.Rect(100,int(self.SCREEN_DIM_HEIGHT/20),800,100)
+        pygame.draw.rect(self.surf, (0, 204, 0), hor)
 
+        vert = pygame.Rect(500,int(self.SCREEN_DIM_HEIGHT/20),100,600)
+        pygame.draw.rect(self.surf, (0, 0, 204), vert)
         #gfxdraw.vline(self.surf,500,int(self.SCREEN_DIM_HEIGHT/2),int(self.SCREEN_DIM_HEIGHT/2)+25,(0, 200, 0))
         #gfxdraw.vline(self.surf,400,int(self.SCREEN_DIM_HEIGHT/2),int(self.SCREEN_DIM_HEIGHT/2)+25,(0, 200, 0))
         #gfxdraw.hline(self.surf,400,500,int(self.SCREEN_DIM_HEIGHT/2)+25,(0, 200, 0))
@@ -506,7 +506,7 @@ class FreeThrowEnv(core.Env):
         else:
             return self.isopen
 
-    def collision(self,rim,ball,hoop,h_r,h_l, b_x):
+    def collision(self,rim,ball,hoop):
         import pygame
         if rim is not None:
             for r in rim:
@@ -514,9 +514,7 @@ class FreeThrowEnv(core.Env):
                     self.reflectBall()
         if ball.colliderect(hoop):
             self.MADE_BUCKET = 1
-            self.DIST_LEFT= -1*(b_x-h_r)/h_l
-        else:
-            self.DIST_LEFT=0.0
+            print("made bucket")
         
     def reflectBall(self):
         self.ball_vel[0]*=-1

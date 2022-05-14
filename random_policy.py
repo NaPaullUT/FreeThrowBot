@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-from freethrow2 import FreeThrowEnv
+from freethrow_total import FreeThrowEnv
 
 
 import warnings
@@ -21,7 +21,7 @@ if __name__ == "__main__":
             env.step([np.random.choice([0,1,2]),np.random.choice([0,1,2]),0])
             env.render()
             x+=1
-        print("release")
+        #print("release")
         env.step([np.random.choice([0,1,2]),np.random.choice([0,1,2]),1])
         env.render()
         while (x>86):
