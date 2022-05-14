@@ -9,7 +9,7 @@ from tqdm import tqdm
 
 def test_sarsa_lamda(envs):
     
-    env = envs[0]
+    env = envs[-1]
     gamma = 1.
     print("Declared Env")
     #print(env.observation_space.high)
