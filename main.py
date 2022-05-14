@@ -14,7 +14,7 @@ def test_sarsa_lamda():
         env.observation_space.low,
         env.observation_space.high,
         env.action_space.nvec,
-        num_rbfs=np.array([4,4,4,4,4,4])
+        num_rbfs=np.array([4,4,4,4])
     )
     print("Declared Value Func")
     w = SarsaLambda(env, gamma, 0.8, 0.01, X, 100)

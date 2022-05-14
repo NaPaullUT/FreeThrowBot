@@ -1,4 +1,3 @@
-from this import d
 from turtle import shape
 import numpy as np
 from tqdm import tqdm
@@ -19,7 +18,7 @@ class StateActionFeatureVectorWithRBF():
         assert n_actions==len(num_rbfs)
 
         s_dim = state_high.size
-        assert self.s_dim == 4
+        assert s_dim == 4
 
         self.num_rbfs = num_rbfs
         s_width = state_high-state_low
