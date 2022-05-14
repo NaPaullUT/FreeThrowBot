@@ -11,7 +11,7 @@ class StateActionFeatureVectorWithRBF():
     def __init__(self,
                  state_low:np.array,
                  state_high:np.array,
-                 num_actions:int,
+                 num_actions:np.array,
                  num_rbfs:np.array,
                  ):#tile_width:np.array
 
@@ -58,67 +58,18 @@ class StateActionFeatureVectorWithRBF():
         """
         return self.num_ind
 
-class StateActionFeatureVectorWithTile():
-    def __init__(self,
-                 state_low:np.array,
-                 state_high:np.array,
-                 num_actions:int,
-                 num_tilings:int,
-                 tile_width:np.array):
-        """
-        state_low: possible minimum value for each dimension in state
-        state_high: possible maimum value for each dimension in state
-        num_actions: the number of possible actions
-        num_tilings: # tilings
-        tile_width: tile width for each dimension
-        """
-        idx = np.arange(0,num_tilings)
-        self.start_pos = -1*(np.matmul(np.transpose(idx[None]),tile_width[None])/num_tilings-state_low)
-
-        self.tile_width=tile_width
-        
-        self.num_tiles = np.ceil((state_high-state_low)/tile_width).astype(int)+1
-        self.num_tilings=num_tilings
-        self.d=np.prod(num_actions)*num_tilings*np.prod(self.num_tiles)
-
-    def feature_vector_len(self) -> int:
-        """
-        return dimension of feature_vector: d = num_actions * num_tilings * num_tiles
-        """
-        return self.d
-
-    def __call__(self, s, done, a) -> np.array:
-        """
-        implement function x: S+ x A -> [0,1]^d
-        if done is True, then return 0^d
-        """
-        if done:
-            return np.zeros(self.d)
-
-        coor = ((s-self.start_pos)/self.tile_width).astype(int)
-        action_offset_1=np.prod(self.num_tiles)*self.num_tilings*(a[0])
-        action_offset_2=np.prod(self.num_tiles)*self.num_tilings*(a[0])*(a[1])
-        action_offset_3=np.prod(self.num_tiles)*self.num_tilings*(a[0])*(a[2])*(a[1])
-        action_offset=+action_offset_1+action_offset_2+action_offset_3
-        idx = np.sum(coor[:]*np.arange(self.num_tiles.size),axis=1)+(np.prod(self.num_tiles)*np.arange(self.num_tilings))+action_offset
-        x = np.zeros(self.d)
-        x[idx] = 1
-        return x
-
 def SarsaLambda(
     env, # openai gym environment
     gamma:float, # discount factor
     lam:float, # decay rate
     alpha:float, # step size
-    X:StateActionFeatureVectorWithTile,
+    X:StateActionFeatureVectorWithRBF,
     num_episode:int,
 ) -> np.array:
     """
     Implement True online Sarsa(\lambda)
     """
     def epsilon_greedy_policy(s,done,w,epsilon=.0):
-        nA = [np.arange(a) for a in env.action_space.nvec]
-        a_space = np.array(np.meshgrid(nA[0],nA[1],nA[2])).T.reshape(-1,3)
         if np.random.rand() < epsilon:
             idx = np.random.choice(a_space.shape[0])
             return a_space[idx]
@@ -126,7 +77,10 @@ def SarsaLambda(
             Q = [np.dot(w, X(s,done,a)) for a in a_space]
             return a_space[np.argmax(Q)]
 
-    w = np.zeros((X.feature_vector_len()))
+    nA = [np.arange(a) for a in env.action_space.nvec]
+    a_space = np.array(np.meshgrid(nA[0],nA[1],nA[2])).T.reshape(-1,3)
+    n_actions = np.prod(env.action_space.nvec)
+    w = np.zeros((X.feature_vector_len())*n_actions).reshape(-1,n_actions)
 
     for y in tqdm(range(num_episode)):
         s, poss = env.reset()
@@ -146,8 +100,10 @@ def SarsaLambda(
                 next_a=[0,0,0]
             next_x=X(s,done,next_a)
 
-            q = np.dot(w,x)
-            next_q=np.dot(w,next_x)
+            w_col = np.where((a_space == a).all(axis=1))[0]
+            w_col_next = np.where((a_space == next_a).all(axis=1))[0]
+            q = np.dot(w[w_col,:],x)
+            next_q=np.dot(w[w_col_next,:],next_x)
 
             tde = r + gamma*next_q - q
 
