@@ -1,6 +1,6 @@
 import numpy as np
 import gym
-from freethrow_total import FreeThrowEnv
+from freethrow_final import FreeThrowEnv
 
 
 import warnings

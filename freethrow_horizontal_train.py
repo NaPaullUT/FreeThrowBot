@@ -229,7 +229,7 @@ class FreeThrowEnv(core.Env):
 
         terminal = self._terminal()
         reward = self._reward()#-1.0 if not terminal and self.poss else 0.0
-        #reward = 
+        
         return (self._get_ob(), self.poss, reward, terminal, {})
 
     def move_ball(self, ns, s, p, a):
